@@ -1,9 +1,9 @@
 name: Pay and Connect Voucher Request
 
 on:
-    schedule:
+  schedule:
     - cron: '01 19 * * 0-4'
-    workflow_dispatch:
+  workflow_dispatch:
   
 jobs:
   request:
@@ -11,33 +11,25 @@ jobs:
     
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
-        node-version: "18.15"
+        node-version: '20'
+        cache: 'npm'
 
     - name: Install Dependencies
       run: npm install
-    - name: Setting the environment variables
-      run: |
-        echo "STUDENT_EMAIL=$STUDENT_EMAIL" >> $GITHUB_ENV
-        echo "STUDENT_PASSWORD=$STUDENT_PASSWORD" >> $GITHUB_ENV
-        echo "NOTIFICATION_EMAIL=$NOTIFICATION_EMAIL" >> $GITHUB_ENV
-        echo "NOTIFICATION_EMAIL_PASSWORD=$NOTIFICATION_EMAIL_PASSWORD" >> $GITHUB_ENV
-        echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> $GITHUB_ENV
-      
+
+    - name: Run Program
+      run: npm start
       env:
         STUDENT_EMAIL: ${{ secrets.STUDENT_EMAIL }}
         STUDENT_PASSWORD: ${{ secrets.STUDENT_PASSWORD }}
         NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
         NOTIFICATION_EMAIL_PASSWORD: ${{ secrets.NOTIFICATION_EMAIL_PASSWORD }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-   
-
-    - name: Run Program
-      run: npm start
 
                 
             

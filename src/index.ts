@@ -1,19 +1,34 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const {
+    GOOGLE_API_KEY,
+    STUDENT_EMAIL,
+    STUDENT_PASSWORD,
+    NOTIFICATION_EMAIL,
+    NOTIFICATION_EMAIL_PASSWORD,
+} = process.env;
+
 const LOGIN_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${GOOGLE_API_KEY}`;
 const VOUCHER_URL = "https://uct.api.getslideapp.com/2/connect/vouchers/issue/";
-const STUDENT_EMAIL = process.env.STUDENT_EMAIL;
-const STUDENT_PASSWORD = process.env.STUDENT_PASSWORD;
-const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL;
-const NOTIFICATION_EMAIL_PASSWORD = process.env.NOTIFICATION_EMAIL_PASSWORD;
+const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 interface LoginResponse {
     idToken: string;
-    [key: string]: any;
+    email: string;
+    refreshToken: string;
+    expiresIn: string;
+    localId: string;
+}
+
+interface VoucherResponse {
+    id: string;
+    status: string;
+    amount?: number;
+    expiryDate?: string;
 }
 
 const emailTransporter = nodemailer.createTransport({
@@ -25,64 +40,59 @@ const emailTransporter = nodemailer.createTransport({
 });
 
 async function sendEmail(subject: string, message: string, isSuccess: boolean) {
+    if (!NOTIFICATION_EMAIL || !NOTIFICATION_EMAIL_PASSWORD) {
+        return;
+    }
+
     try {
-        const htmlContent = `
-            <h2 style="color: ${isSuccess ? "green" : "red"};">Voucher Request ${isSuccess ? "Successful" : "Failed"}</h2>
+        const status = isSuccess ? "Successful" : "Failed";
+        const color = isSuccess ? "green" : "red";
+        const html = `
+            <h2 style="color: ${color};">Voucher Request ${status}</h2>
             <p><strong>Time:</strong> ${new Date().toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" })}</p>
-            <p><strong>Status:</strong> ${isSuccess ? " Success" : " Failed"}</p>
-            <hr />
             <p>${message}</p>
         `;
 
         await emailTransporter.sendMail({
             from: NOTIFICATION_EMAIL,
             to: NOTIFICATION_EMAIL,
-            subject: subject,
-            html: htmlContent,
+            subject,
+            html,
         });
-
-        console.log("Email notification sent.");
     } catch (error) {
-        console.error("Failed to send email:", error instanceof Error ? error.message : error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to send email notification: ${errorMessage}`);
     }
 }
 
 async function login(): Promise<string> {
     try {
-        console.log("Logging in to Pay and Connect...");
         const { data } = await axios.post<LoginResponse>(
             LOGIN_URL,
             {
                 returnSecureToken: true,
                 email: STUDENT_EMAIL,
                 password: STUDENT_PASSWORD,
-                clientType: "CLIENT_TYPE_WEB"
+                clientType: "CLIENT_TYPE_WEB",
             },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
+            { timeout: REQUEST_TIMEOUT }
         );
-        
-        const token = data.idToken;
-        console.log("Login successful. Token obtained.");
-        return token;
+
+        return data.idToken;
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            console.error("Login failed:", error.response?.data);
-            throw new Error(`Login failed: ${error.response?.status}`);
-        } else {
-            console.error("Unexpected error during login:", error);
-            throw error;
+            const status = error.response?.status;
+            const errorData = error.response?.data as any;
+            const message = errorData?.error?.message || "Authentication failed";
+            throw new Error(`Login failed (${status}): ${message}`);
         }
+        throw error;
     }
 }
 
-async function requestVoucher(token: string) {
+async function requestVoucher(token: string): Promise<void> {
     try {
-        console.log("Requesting voucher...");
-        const { data } = await axios.post(
+        await axios.post<VoucherResponse>(
             VOUCHER_URL,
             {},
             {
@@ -92,50 +102,50 @@ async function requestVoucher(token: string) {
                     Referer: "https://app.payandconnect.co.za/u/vouchers",
                     Authorization: `Bearer ${token}`,
                 },
+                timeout: REQUEST_TIMEOUT,
             }
         );
-        console.log("✓ Voucher requested successfully!");
-        console.log("Response:", data);
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            console.error("Voucher request failed:", error.response?.data);
-            throw new Error(`Voucher request failed: ${error.response?.status}`);
-        } else {
-            console.error("Unexpected error:", error);
-            throw error;
+            const status = error.response?.status;
+            const errorData = error.response?.data as any;
+            const message = errorData?.error || errorData?.message || "Request failed";
+            throw new Error(`Voucher request failed (${status}): ${message}`);
         }
+        throw error;
     }
 }
 
 async function main() {
+    if (!STUDENT_EMAIL || !STUDENT_PASSWORD) {
+        throw new Error("Missing required environment variables: STUDENT_EMAIL and STUDENT_PASSWORD");
+    }
+
     try {
-        if (!STUDENT_EMAIL || !STUDENT_PASSWORD) {
-            throw new Error("STUDENT_EMAIL and STUDENT_PASSWORD environment variables are required");
-        }
-        
         const token = await login();
         await requestVoucher(token);
-        console.log("Process completed successfully.");
-        
-        if (NOTIFICATION_EMAIL && NOTIFICATION_EMAIL_PASSWORD) {
-            await sendEmail(
-                "UCT Lunch Voucher Requested Successfully",
-                "Your lunch voucher has been successfully requested for today.",
-                true
-            );
-        }
+        console.log("Voucher requested successfully");
+
+        await sendEmail(
+            "UCT Lunch Voucher Requested Successfully",
+            "Your lunch voucher has been successfully requested for today.",
+            true
+        );
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error("Fatal error:", errorMessage);
-        
-        if (NOTIFICATION_EMAIL && NOTIFICATION_EMAIL_PASSWORD) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Error:", message);
+
+        try {
             await sendEmail(
-                "✗ UCT Lunch Voucher Request Failed",
-                `Error: ${errorMessage}`,
+                "UCT Lunch Voucher Request Failed",
+                `Error: ${message}`,
                 false
             );
+        } catch (emailError) {
+            const emailErrorMessage = emailError instanceof Error ? emailError.message : String(emailError);
+            console.error("Failed to send error notification:", emailErrorMessage);
         }
-        
+
         process.exit(1);
     }
 }

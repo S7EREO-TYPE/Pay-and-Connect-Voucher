@@ -1,10 +1,12 @@
 {
   "name": "pay-and-connect-plus-plus",
   "version": "1.0.0",
-  "description": "An automcation programme for requesting vouchers at pay and connect uct",
+  "description": "An automation tool that automatically requests lunch vouchers from the UCT Pay and Connect system",
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "dev": "nodemon --exec ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Deshy Dan",

@@ -3,6 +3,7 @@ name: Pay and Connect Voucher Request
 on:
     schedule:
     - cron: '01 19 * * 0-4'
+    workflow_dispatch:
   
 jobs:
   request:

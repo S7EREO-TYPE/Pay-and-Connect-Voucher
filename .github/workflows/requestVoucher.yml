@@ -2,7 +2,7 @@ name: Pay and Connect Voucher Request
 
 on:
     schedule:
-    - cron: '00 02 * * 1-5'
+    - cron: '01 19 * * 0-4'
   
 jobs:
   request:
@@ -21,10 +21,16 @@ jobs:
       run: npm install
     - name: Setting the environment variables
       run: |
-       echo "AUTHORIZATION_TOKEN=$AUTHORIZATION_TOKEN" >> $GITHUB_ENV
+        echo "STUDENT_EMAIL=$STUDENT_EMAIL" >> $GITHUB_ENV
+        echo "STUDENT_PASSWORD=$STUDENT_PASSWORD" >> $GITHUB_ENV
+        echo "NOTIFICATION_EMAIL=$NOTIFICATION_EMAIL" >> $GITHUB_ENV
+        echo "NOTIFICATION_EMAIL_PASSWORD=$NOTIFICATION_EMAIL_PASSWORD" >> $GITHUB_ENV
       
       env:
-        AUTHORIZATION_TOKEN: ${{ secrets.AUTHORIZATION_TOKEN }}
+        STUDENT_EMAIL: ${{ secrets.STUDENT_EMAIL }}
+        STUDENT_PASSWORD: ${{ secrets.STUDENT_PASSWORD }}
+        NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+        NOTIFICATION_EMAIL_PASSWORD: ${{ secrets.NOTIFICATION_EMAIL_PASSWORD }}
    
 
     - name: Run Program

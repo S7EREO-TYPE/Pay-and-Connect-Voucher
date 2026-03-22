@@ -35,7 +35,7 @@ async function sendEmail(subject: string, message: string, isSuccess: boolean) {
 
         await emailTransporter.sendMail({
             from: NOTIFICATION_EMAIL,
-            to: process.env.STUDENT_EMAIL,
+            to: NOTIFICATION_EMAIL,
             subject: subject,
             html: htmlContent,
         });

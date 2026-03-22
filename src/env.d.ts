@@ -5,6 +5,7 @@ declare global{
             STUDENT_PASSWORD:string
             NOTIFICATION_EMAIL:string
             NOTIFICATION_EMAIL_PASSWORD:string
+            GOOGLE_API_KEY:string
         }
     }
 }

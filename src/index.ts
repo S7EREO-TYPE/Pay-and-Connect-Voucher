@@ -3,7 +3,8 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
-const LOGIN_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDEFW8cGJ0USejK104PmJkQVc5StxuOfHA";
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const LOGIN_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${GOOGLE_API_KEY}`;
 const VOUCHER_URL = "https://uct.api.getslideapp.com/2/connect/vouchers/issue/";
 const STUDENT_EMAIL = process.env.STUDENT_EMAIL;
 const STUDENT_PASSWORD = process.env.STUDENT_PASSWORD;

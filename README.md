@@ -82,7 +82,7 @@ STUDENTS=[{"email":"student1@myuct.ac.za","password":"pass1","notifyEmail":"noti
 STUDENTS=student1@myuct.ac.za:pass1:notify1@example.com,student2@myuct.ac.za:pass2
 ```
 
-When `notifyEmail` is provided, the app sends the individual success/failure email to that address (not to the student's UCT email). The admin summary is still sent to `NOTIFICATION_EMAIL`.
+When `notifyEmail` is provided, the app sends the individual success/failure email only to that address. If `notifyEmail` is omitted, the app does not send an individual notification for that student — only the admin summary is sent to `NOTIFICATION_EMAIL`.
 
 Each student will also receive an email notification when their voucher request is processed (success or failure). The app sends the email from the `NOTIFICATION_EMAIL` address, and the admin `NOTIFICATION_EMAIL` also receives a copy.
 

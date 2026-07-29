@@ -249,7 +249,7 @@ async function main() {
 
             // Notify the student (and admin)
             try {
-                const recipient = s.notifyEmail || s.email;
+                const recipient = s.notifyEmail; // only notify the provided notifyEmail
                 if (recipient && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
                     await sendEmail(
                         "UCT Lunch Voucher Requested Successfully",
@@ -259,7 +259,7 @@ async function main() {
                         false
                     );
                 } else {
-                    console.warn(`Skipping notification for ${s.email}: invalid recipient ${String(recipient)}`);
+                    console.warn(`No notifyEmail for ${s.email}; skipping individual notification.`);
                 }
             } catch (notifyErr) {
                 console.error(`Failed to notify ${s.email}:`, notifyErr instanceof Error ? notifyErr.message : String(notifyErr));
@@ -270,7 +270,7 @@ async function main() {
             results.push({ email: s.email, success: false, message });
             // Notify the student about the failure (and admin)
             try {
-                const recipient = s.notifyEmail || s.email;
+                const recipient = s.notifyEmail; // only notify the provided notifyEmail
                 if (recipient && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
                     await sendEmail(
                         "UCT Lunch Voucher Request Failed",
@@ -280,7 +280,7 @@ async function main() {
                         false
                     );
                 } else {
-                    console.warn(`Skipping failure notification for ${s.email}: invalid recipient ${String(recipient)}`);
+                    console.warn(`No notifyEmail for ${s.email}; skipping individual failure notification.`);
                 }
             } catch (notifyErr) {
                 console.error(`Failed to notify ${s.email} about failure:`, notifyErr instanceof Error ? notifyErr.message : String(notifyErr));

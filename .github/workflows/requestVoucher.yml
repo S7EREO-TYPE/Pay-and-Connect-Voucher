@@ -25,8 +25,8 @@ jobs:
     - name: Run Program
       run: npm start
       env:
-        STUDENT_EMAIL: ${{ secrets.STUDENT_EMAIL }}
-        STUDENT_PASSWORD: ${{ secrets.STUDENT_PASSWORD }}
+        # Preferred: provide all student accounts in one secret named `STUDENTS` (JSON or CSV)
+        STUDENTS: ${{ secrets.STUDENTS }}
         NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
         NOTIFICATION_EMAIL_PASSWORD: ${{ secrets.NOTIFICATION_EMAIL_PASSWORD }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}

@@ -45,6 +45,47 @@ cp .env.example .env
 - `NOTIFICATION_EMAIL_PASSWORD`: Your Gmail app password (not your normal password - see below)
 - `GOOGLE_API_KEY`: Your Google API key for authentication
 
+### Multiple Students
+
+To add multiple student accounts so the app requests vouchers for each, set the `STUDENTS` environment variable. Supported formats:
+
+- JSON array (recommended):
+
+```env
+STUDENTS=[{"email":"student1@myuct.ac.za","password":"pass1"},{"email":"student2@myuct.ac.za","password":"pass2"}]
+```
+
+- CSV or semicolon list of `email:password` pairs:
+
+```env
+STUDENTS=student1@myuct.ac.za:pass1,student2@myuct.ac.za:pass2
+```
+
+Notes:
+- When running locally, place the `STUDENTS` line in your `.env` file. The app will prefer `STUDENTS` over `STUDENT_EMAIL`/`STUDENT_PASSWORD` if present.
+- For GitHub Actions, add a repository secret named `STUDENTS` with the JSON string (or CSV) as the secret value. Then reference it in your workflow as you would the other secrets.
+- If you only have one student, you can continue using `STUDENT_EMAIL` and `STUDENT_PASSWORD`.
+
+Per-student notification email
+
+You can optionally provide a separate notification email for each student. Supported formats:
+
+- JSON (recommended): include `notifyEmail` in each entry:
+
+```env
+STUDENTS=[{"email":"student1@myuct.ac.za","password":"pass1","notifyEmail":"notify1@example.com"},{"email":"student2@myuct.ac.za","password":"pass2"}]
+```
+
+- CSV: use `email:password:notifyEmail` pairs (notifyEmail optional):
+
+```env
+STUDENTS=student1@myuct.ac.za:pass1:notify1@example.com,student2@myuct.ac.za:pass2
+```
+
+When `notifyEmail` is provided, the app sends the individual success/failure email to that address (not to the student's UCT email). The admin summary is still sent to `NOTIFICATION_EMAIL`.
+
+Each student will also receive an email notification when their voucher request is processed (success or failure). The app sends the email from the `NOTIFICATION_EMAIL` address, and the admin `NOTIFICATION_EMAIL` also receives a copy.
+
 ### Getting Gmail App Password
 
 1. Enable 2-factor authentication on your Google account

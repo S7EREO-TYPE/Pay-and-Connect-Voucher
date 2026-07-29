@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { parseStudents } from "./parse_students";
 
 dotenv.config();
 
@@ -147,88 +148,9 @@ async function main() {
     // 1) `STUDENTS` as JSON string: [{"email":"...","password":"..."}, ...]
     // 2) `STUDENTS` as CSV/semicolon list: "e1:pass1,e2:pass2"
     // 3) Fallback to single `STUDENT_EMAIL` + `STUDENT_PASSWORD`
-    const students: { email: string; password: string; notifyEmail?: string }[] = [];
 
-    if (STUDENTS) {
-        // Normalize: strip surrounding single/double quotes that may be added by env files or secrets
-        let raw = STUDENTS.trim();
-        if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
-            raw = raw.slice(1, -1);
-        }
 
-        // Helper: simple email validation
-        const looksLikeEmail = (s?: string) => !!s && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-
-        // Try JSON first when it looks like JSON
-        if (raw.startsWith('[') || raw.startsWith('{')) {
-            try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                    for (const item of parsed) {
-                        const email = item && item.email ? String(item.email).trim() : undefined;
-                        const password = item && item.password ? String(item.password).trim() : undefined;
-                        const notifyEmail = item && item.notifyEmail ? String(item.notifyEmail).trim() : undefined;
-                        if (email && password && looksLikeEmail(email)) {
-                            students.push({ email, password, notifyEmail });
-                        } else {
-                            console.warn('Skipping invalid student entry from STUDENTS JSON:', item);
-                        }
-                    }
-                }
-            } catch (err) {
-                // Try a relaxed parse: replace single quotes with double quotes and retry
-                try {
-                    const relaxed = raw.replace(/'/g, '"');
-                    const parsed = JSON.parse(relaxed);
-                    if (Array.isArray(parsed)) {
-                        for (const item of parsed) {
-                            const email = item && item.email ? String(item.email).trim() : undefined;
-                            const password = item && item.password ? String(item.password).trim() : undefined;
-                            const notifyEmail = item && item.notifyEmail ? String(item.notifyEmail).trim() : undefined;
-                            if (email && password && looksLikeEmail(email)) {
-                                students.push({ email, password, notifyEmail });
-                            } else {
-                                console.warn('Skipping invalid student entry from relaxed STUDENTS JSON:', item);
-                            }
-                        }
-                    }
-                } catch (err2) {
-                    console.warn('STUDENTS appears to be JSON but failed to parse; falling back to CSV parsing.');
-                    // fall through to CSV parsing below using raw
-                    const pairs = raw.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
-                    for (const p of pairs) {
-                        const parts = p.split(":");
-                        if (parts.length >= 2) {
-                            const emailPart = parts[0].trim();
-                            const passwordPart = parts[1].trim();
-                            const notifyPart = parts.length >= 3 ? parts.slice(2).join(":").trim() : undefined;
-                            if (looksLikeEmail(emailPart)) {
-                                students.push({ email: emailPart, password: passwordPart, notifyEmail: notifyPart });
-                            } else {
-                                console.warn('Skipping malformed STUDENTS fragment:', p);
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            // CSV/semicolon list of email:password[:notifyEmail]
-            const pairs = raw.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
-            for (const p of pairs) {
-                const parts = p.split(":");
-                if (parts.length >= 2) {
-                    const emailPart = parts[0].trim();
-                    const passwordPart = parts[1].trim();
-                    const notifyPart = parts.length >= 3 ? parts.slice(2).join(":").trim() : undefined;
-                    if (looksLikeEmail(emailPart)) {
-                        students.push({ email: emailPart, password: passwordPart, notifyEmail: notifyPart });
-                    } else {
-                        console.warn('Skipping malformed STUDENTS fragment:', p);
-                    }
-                }
-            }
-        }
-    }
+    const students = parseStudents(STUDENTS);
 
     if (students.length === 0 && STUDENT_EMAIL && STUDENT_PASSWORD) {
         students.push({ email: STUDENT_EMAIL, password: STUDENT_PASSWORD });
